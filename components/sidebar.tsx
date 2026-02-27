@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { logout } from '@/lib/auth'
 
 export function Sidebar() {
 	const pathname = usePathname()
@@ -18,7 +19,7 @@ export function Sidebar() {
 	const isActiveParent = (paths: string[]) => paths.some((path) => pathname?.startsWith(path))
 
 	return (
-		<aside className="w-64 bg-white border-r border-gray-200 p-6">
+		<aside className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
 			{/* Logo */}
 			<div className="flex items-center mb-8 justify-center">
 				<Image src="/assets/logo.png" alt="logo" width={120} height={40} />
@@ -250,6 +251,24 @@ export function Sidebar() {
 					System Logs
 				</Link>
 			</nav>
+
+			{/* Logout Button */}
+			<div className="mt-auto pt-6 border-t border-gray-200">
+				<button
+					onClick={() => logout()}
+					className="flex items-center w-full px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+				>
+					<svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth="2"
+							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+						/>
+					</svg>
+					Logout
+				</button>
+			</div>
 		</aside>
 	)
 }

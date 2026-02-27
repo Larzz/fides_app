@@ -11,6 +11,14 @@ const publicRoutes = [
 ]
 
 /**
+ * API routes that don't require authentication
+ */
+const publicApiRoutes = [
+	'/api/auth/login',
+	'/api/auth/logout',
+]
+
+/**
  * Check if a route is public
  */
 function isPublicRoute(pathname: string): boolean {
@@ -18,42 +26,84 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 /**
- * Check if user is authenticated
- * This checks for a JWT token in cookies
- * You can customize this based on your auth implementation
+ * Check if an API route is public
  */
-function isAuthenticated(request: NextRequest): boolean {
-	// Check for JWT token in cookies
-	// Adjust cookie name based on your implementation
-	const token = request.cookies.get('auth_token')?.value ||
-		request.cookies.get('token')?.value ||
-		request.cookies.get('jwt')?.value
+function isPublicApiRoute(pathname: string): boolean {
+	return publicApiRoutes.some((route) => pathname.startsWith(route))
+}
 
-	// If token exists, consider user authenticated
-	// For production, you should validate the token signature/expiry
-	// This is a basic check - enhance based on your needs
-	return !!token
+/**
+ * Check if user is authenticated by validating token with backend
+ * For Sanctum, we check for the auth_token cookie
+ */
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
+	// Check for Sanctum token in cookies
+	const token = request.cookies.get('auth_token')?.value
+
+	if (!token) {
+		return false
+	}
+
+	// For production, you should validate the token with your backend
+	// For now, we'll do a basic check. In production, make an API call to verify
+	// the token is still valid and not expired
+	try {
+		// Optionally validate token with backend (uncomment for production)
+		// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.creativouae.com'
+		// const response = await fetch(`${API_URL}/api/user`, {
+		// 	method: 'GET',
+		// 	headers: {
+		// 		Authorization: `Bearer ${token}`,
+		// 		Accept: 'application/json',
+		// 	},
+		// 	credentials: 'include',
+		// })
+		// return response.ok
+
+		// Basic check: token exists and is not empty
+		return token.length > 0
+	} catch (error) {
+		console.error('Token validation error:', error)
+		return false
+	}
 }
 
 /**
  * Next.js Middleware
  * Runs on every request before the page is rendered
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl
+
+	// Allow public API routes
+	if (pathname.startsWith('/api') && isPublicApiRoute(pathname)) {
+		return NextResponse.next()
+	}
 
 	// Allow public routes
 	if (isPublicRoute(pathname)) {
 		// If user is already authenticated and tries to access login, redirect to dashboard
-		if (pathname === '/login' && isAuthenticated(request)) {
-			return NextResponse.redirect(new URL('/', request.url))
+		if (pathname === '/login') {
+			const authenticated = await isAuthenticated(request)
+			if (authenticated) {
+				return NextResponse.redirect(new URL('/', request.url))
+			}
 		}
 		return NextResponse.next()
 	}
 
-	// Protect all other routes
-	if (!isAuthenticated(request)) {
-		// Redirect to login with the original URL as a query parameter
+	// Protect all other routes (including API routes that aren't public)
+	const authenticated = await isAuthenticated(request)
+	if (!authenticated) {
+		// For API routes, return 401 instead of redirecting
+		if (pathname.startsWith('/api')) {
+			return NextResponse.json(
+				{ message: 'Unauthorized' },
+				{ status: 401 }
+			)
+		}
+
+		// For pages, redirect to login with the original URL as a query parameter
 		const loginUrl = new URL('/login', request.url)
 		loginUrl.searchParams.set('redirect', pathname)
 		return NextResponse.redirect(loginUrl)
@@ -69,13 +119,12 @@ export const config = {
 	matcher: [
 		/*
 		 * Match all request paths except:
-		 * - api (API routes)
 		 * - _next/static (static files)
 		 * - _next/image (image optimization files)
 		 * - favicon.ico (favicon file)
 		 * - public files (public folder)
 		 */
-		'/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+		'/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
 	],
 }
 

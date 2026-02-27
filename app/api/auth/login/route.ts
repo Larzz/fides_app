@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Login API Route
- * This proxies login requests to your Laravel backend
- * 
- * TODO: Update the API_URL to match your Laravel backend URL
+ * This proxies login requests to your Laravel backend with Sanctum authentication
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+export const dynamic = 'force-dynamic'
+
+const API_URL = 'https://api.creativouae.com'
 
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json()
-		const { email, password } = body
+		const { email, password, rememberMe } = body
 
 		if (!email || !password) {
 			return NextResponse.json(
@@ -20,13 +20,14 @@ export async function POST(request: NextRequest) {
 			)
 		}
 
-		// Call your Laravel API
-		const response = await fetch(`${API_URL}/api/auth/login`, {
+		// Call your Laravel API with Sanctum
+		const response = await fetch(`${API_URL}/api/login`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				Accept: 'application/json',
 			},
+			credentials: 'include', // Important for Sanctum cookies
 			body: JSON.stringify({ email, password }),
 		})
 
@@ -39,11 +40,47 @@ export async function POST(request: NextRequest) {
 			)
 		}
 
-		// Return the token to be stored in cookies by the client
-		return NextResponse.json({
-			token: data.token || data.access_token,
+		// Create response with user data
+		const nextResponse = NextResponse.json({
+			success: true,
 			user: data.user,
 		})
+
+		// Extract token from response (Sanctum may return token in body or set cookie)
+		const token = data.token || data.access_token
+
+		// Set HTTP-only cookie for Sanctum token (more secure)
+		if (token) {
+			const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 // 30 days or 1 day
+			nextResponse.cookies.set('auth_token', token, {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'lax',
+				maxAge,
+				path: '/',
+			})
+		}
+
+		// Forward Sanctum cookies from Laravel if present
+		const setCookieHeader = response.headers.get('set-cookie')
+		if (setCookieHeader) {
+			// Parse and forward Sanctum session cookies
+			const cookies = setCookieHeader.split(',')
+			cookies.forEach((cookie) => {
+				const [nameValue] = cookie.split(';')
+				const [name, value] = nameValue.trim().split('=')
+				if (name && value && (name.includes('sanctum') || name.includes('laravel_session'))) {
+					nextResponse.cookies.set(name, value, {
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'lax',
+						path: '/',
+					})
+				}
+			})
+		}
+
+		return nextResponse
 	} catch (error) {
 		console.error('Login error:', error)
 		return NextResponse.json(

@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { setAuthToken } from '@/lib/auth'
+// Token is now handled server-side via HTTP-only cookies
 
 function LoginForm() {
 	const router = useRouter()
@@ -22,31 +22,33 @@ function LoginForm() {
 		setError('')
 
 		try {
-			// TODO: Replace with your actual API endpoint
-			// Example: const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 			const response = await fetch('/api/auth/login', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ email, password }),
+				credentials: 'include', // Important for cookies
+				body: JSON.stringify({ email, password, rememberMe }),
 			})
 
+			const data = await response.json()
+
 			if (!response.ok) {
-				const data = await response.json()
 				throw new Error(data.message || 'Login failed')
 			}
 
-			const data = await response.json()
-			
-			// Store the token in cookies
-			if (data.token) {
-				setAuthToken(data.token, rememberMe)
+			// Token is now stored as HTTP-only cookie by the server
+			// No need to manually set it on the client
+			// The response contains success and user data
+			if (data.success) {
+				// Redirect to the original page or dashboard
+				const redirect = searchParams.get('redirect') || '/'
+				router.push(redirect)
+				// Force a page reload to ensure middleware recognizes the new cookie
+				router.refresh()
+			} else {
+				throw new Error('Login failed. Please try again.')
 			}
-
-			// Redirect to the original page or dashboard
-			const redirect = searchParams.get('redirect') || '/'
-			router.push(redirect)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'An error occurred')
 			setIsLoading(false)
