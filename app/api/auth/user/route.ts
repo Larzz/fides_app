@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getApiUrl } from '@/lib/api'
 
 /**
  * User Validation API Route
  * Validates the current user's token and returns user data
  */
 export const dynamic = 'force-dynamic'
-
-const API_URL = 'https://api.creativouae.com'
 
 export async function GET(request: NextRequest) {
 	try {
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		// Validate token with Laravel backend
-		const response = await fetch(`${API_URL}/api/user`, {
+		const response = await fetch(`${getApiUrl()}/api/user`, {
 			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${token}`,

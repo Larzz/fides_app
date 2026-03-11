@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 // Token is now handled server-side via HTTP-only cookies
 
 function LoginForm() {
-	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [showPassword, setShowPassword] = useState(false)
 	const [email, setEmail] = useState('')
@@ -41,11 +40,15 @@ function LoginForm() {
 			// No need to manually set it on the client
 			// The response contains success and user data
 			if (data.success) {
-				// Redirect to the original page or dashboard
-				const redirect = searchParams.get('redirect') || '/'
-				router.push(redirect)
-				// Force a page reload to ensure middleware recognizes the new cookie
-				router.refresh()
+				// Use full page redirect so the browser sends the new cookie
+				// with the request. Client-side router.push() can race with
+				// cookie propagation, causing middleware to miss the token.
+				const rawRedirect = searchParams.get('redirect') || '/dashboard'
+				const redirectTo =
+					rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+						? rawRedirect
+						: '/dashboard'
+				window.location.href = redirectTo
 			} else {
 				throw new Error('Login failed. Please try again.')
 			}
@@ -74,7 +77,7 @@ function LoginForm() {
                         <Image
                             src="/assets/logo.png"
                             alt="Creativ Logo"
-                            width={120}
+                            width={300}
                             height={40}
                             className="h-auto"
                             priority
@@ -231,7 +234,7 @@ function LoginForm() {
 
                 {/* Footer Elements */}
                 {/* Help Icon - Bottom Left */}
-                <div className="absolute bottom-6 left-6 z-10">
+                {/* <div className="absolute bottom-6 left-6 z-10">
                     <button
                         type="button"
                         className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-500 transition-colors"
@@ -241,10 +244,10 @@ function LoginForm() {
                             <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
                         </div>
                     </button>
-                </div>
+                </div> */}
 
 			{/* Support Info - Bottom Right */}
-			<div className="absolute bottom-6 right-6 z-10 max-w-xs">
+			<div className="absolute bottom-6 center-6 z-10 max-w-xs">
 				<div className="bg-orange-100 rounded-lg p-4 shadow-lg">
 					<p className="text-sm text-gray-800 mb-1">
 						Need help accessing your account?{' '}

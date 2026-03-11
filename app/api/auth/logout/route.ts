@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getApiUrl } from '@/lib/api'
 
 /**
  * Logout API Route
  * Handles user logout and clears authentication cookies
  */
 export const dynamic = 'force-dynamic'
-
-const API_URL = 'https://api.creativouae.com'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
 		// Call Laravel logout endpoint if token exists
 		if (token) {
 			try {
-				await fetch(`${API_URL}/api/logout`, {
+				await fetch(`${getApiUrl()}/api/logout`, {
 					method: 'POST',
 					headers: {
 						Authorization: `Bearer ${token}`,
