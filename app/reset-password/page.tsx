@@ -3,21 +3,60 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { getApiUrl } from '@/lib/api'
 
 export default function ResetPasswordPage() {
+	const searchParams = useSearchParams()
 	const [newPassword, setNewPassword] = useState('')
 	const [confirmPassword, setConfirmPassword] = useState('')
 	const [showNewPassword, setShowNewPassword] = useState(false)
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState('')
+	const [success, setSuccess] = useState('')
 
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		setError('')
+		setSuccess('')
+
 		if (newPassword !== confirmPassword) {
-			alert('Passwords do not match')
+			setError('Passwords do not match')
 			return
 		}
-		// Handle reset password logic here
-		console.log('Password reset:', { newPassword })
+
+		setIsLoading(true)
+		try {
+			const token = searchParams.get('token')
+			const email = searchParams.get('email')
+			const response = await fetch(`${getApiUrl()}/fides_api/reset-password`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				body: JSON.stringify({
+					token,
+					email,
+					password: newPassword,
+					password_confirmation: confirmPassword,
+				}),
+			})
+
+			const payload = await response.json()
+			if (!response.ok) {
+				throw new Error(payload?.message || 'Failed to reset password')
+			}
+
+			setSuccess(payload?.message || 'Password reset successful.')
+			setNewPassword('')
+			setConfirmPassword('')
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Request failed')
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -58,6 +97,17 @@ export default function ResetPasswordPage() {
 
 					{/* Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
+						{error ? (
+							<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+								{error}
+							</div>
+						) : null}
+						{success ? (
+							<div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+								{success}
+							</div>
+						) : null}
+
 						{/* New Password Field */}
 						<div>
 							<label
@@ -73,6 +123,7 @@ export default function ResetPasswordPage() {
 									value={newPassword}
 									onChange={(e) => setNewPassword(e.target.value)}
 									required
+									disabled={isLoading}
 									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-12"
 									placeholder="Create a new password"
 								/>
@@ -144,6 +195,7 @@ export default function ResetPasswordPage() {
 									value={confirmPassword}
 									onChange={(e) => setConfirmPassword(e.target.value)}
 									required
+									disabled={isLoading}
 									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-12"
 									placeholder="Re-enter new password"
 								/>
@@ -205,9 +257,10 @@ export default function ResetPasswordPage() {
 						{/* Reset Password Button */}
 						<button
 							type="submit"
+							disabled={isLoading}
 							className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg uppercase tracking-wide transition-colors duration-200"
 						>
-							RESET PASSWORD
+							{isLoading ? 'RESETTING...' : 'RESET PASSWORD'}
 						</button>
 					</form>
 				</div>

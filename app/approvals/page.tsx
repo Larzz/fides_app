@@ -1,8 +1,18 @@
 import { PageLayout } from '@/components/page-layout'
+import { getFidesPageData } from '@/lib/fides-api'
 
-export default function ApprovalsPage() {
+export const dynamic = 'force-dynamic'
+
+interface ApprovalsPageData {
+	title?: string
+}
+
+export default async function ApprovalsPage() {
+	const pageData = await getFidesPageData<ApprovalsPageData>('approvals', {})
+	const title = pageData.title || 'Welcome, Sarah 👋'
+
 	return (
-		<PageLayout title="Welcome, Sarah 👋">
+		<PageLayout title={title}>
 			{/* Stats Card */}
 			<div className="bg-white rounded-lg shadow-sm p-6 mb-6">
 				<div className="flex items-baseline gap-2">

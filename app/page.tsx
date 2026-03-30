@@ -1,9 +1,19 @@
 import { PageLayout } from '@/components/page-layout'
 import Link from 'next/link'
+import { getFidesPageData } from '@/lib/fides-api'
 
-export default function Dashboard() {
-  return (
-    <PageLayout title="Welcome, Sarah 👋">
+export const dynamic = 'force-dynamic'
+
+interface DashboardPageData {
+	title?: string
+}
+
+export default async function Dashboard() {
+	const pageData = await getFidesPageData<DashboardPageData>('dashboard', {})
+	const title = pageData.title || 'Welcome, Sarah 👋'
+
+	return (
+    <PageLayout title={title}>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-6">

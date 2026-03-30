@@ -46,7 +46,7 @@ function LoginForm() {
 				const rawRedirect = searchParams.get('redirect') || '/dashboard'
 				const redirectTo =
 					rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
-						? rawRedirect
+						? rawRedirect   
 						: '/dashboard'
 				window.location.href = redirectTo
 			} else {

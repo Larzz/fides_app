@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 			)
 		}
 
-		// Validate token with Laravel backend
-		const response = await fetch(`${getApiUrl()}/api/user`, {
+		// Validate token with backend
+		const response = await fetch(`${getApiUrl()}/fides_api/user`, {
 			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${token}`,

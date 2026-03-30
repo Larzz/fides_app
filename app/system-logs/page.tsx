@@ -1,8 +1,18 @@
 import { PageLayout } from '@/components/page-layout'
+import { getFidesPageData } from '@/lib/fides-api'
 
-export default function SystemLogsPage() {
+export const dynamic = 'force-dynamic'
+
+interface SystemLogsPageData {
+	title?: string
+}
+
+export default async function SystemLogsPage() {
+	const pageData = await getFidesPageData<SystemLogsPageData>('system-logs', {})
+	const title = pageData.title || 'Welcome, Sarah 👋'
+
 	return (
-		<PageLayout title="Welcome, Sarah 👋">
+		<PageLayout title={title}>
 			{/* Activities Card */}
 			<div className="bg-white rounded-lg shadow-sm p-6 mb-6">
 				<div className="flex items-baseline gap-2">

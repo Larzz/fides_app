@@ -3,14 +3,43 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { getApiUrl } from '@/lib/api'
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState('')
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState('')
+	const [success, setSuccess] = useState('')
 
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
-		// Handle forgot password logic here
-		console.log('Password reset request:', { email })
+		setIsLoading(true)
+		setError('')
+		setSuccess('')
+
+		try {
+			const response = await fetch(`${getApiUrl()}/fides_api/forgot-password`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				body: JSON.stringify({ email }),
+			})
+
+			const payload = await response.json()
+			if (!response.ok) {
+				throw new Error(payload?.message || 'Failed to send reset link')
+			}
+
+			setSuccess(
+				payload?.message || 'If your email exists, a reset link was sent.',
+			)
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Request failed')
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -56,6 +85,17 @@ export default function ForgotPasswordPage() {
 
 					{/* Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
+						{error ? (
+							<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+								{error}
+							</div>
+						) : null}
+						{success ? (
+							<div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+								{success}
+							</div>
+						) : null}
+
 						{/* Email Field */}
 						<div>
 							<label
@@ -70,6 +110,7 @@ export default function ForgotPasswordPage() {
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
 								required
+								disabled={isLoading}
 								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
 								placeholder="Email Address"
 							/>
@@ -78,9 +119,10 @@ export default function ForgotPasswordPage() {
 						{/* Send Reset Link Button */}
 						<button
 							type="submit"
+							disabled={isLoading}
 							className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg uppercase tracking-wide transition-colors duration-200"
 						>
-							SEND RESET LINK
+							{isLoading ? 'SENDING...' : 'SEND RESET LINK'}
 						</button>
 
 						{/* Back to Sign In */}

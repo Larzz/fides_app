@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
 			)
 		}
 
-		// Call your Laravel API with Sanctum
-		const response = await fetch(`${getApiUrl()}/api/login`, {
+		// Call backend auth API
+		const response = await fetch(`${getApiUrl()}/fides_api/login`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

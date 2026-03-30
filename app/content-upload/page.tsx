@@ -1,8 +1,21 @@
 import { PageLayout } from '@/components/page-layout'
+import { getFidesPageData } from '@/lib/fides-api'
 
-export default function ContentUploadPage() {
+export const dynamic = 'force-dynamic'
+
+interface ContentUploadPageData {
+	title?: string
+}
+
+export default async function ContentUploadPage() {
+	const pageData = await getFidesPageData<ContentUploadPageData>(
+		'content-upload',
+		{},
+	)
+	const title = pageData.title || 'Welcome, Sarah 👋'
+
 	return (
-		<PageLayout title="Welcome, Sarah 👋">
+		<PageLayout title={title}>
 			{/* Archived Files Card */}
 			<div className="bg-white rounded-lg shadow-sm p-6 mb-6">
 				<div className="flex items-center justify-between">

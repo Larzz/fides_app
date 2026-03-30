@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
 	try {
 		const token = request.cookies.get('auth_token')?.value
 
-		// Call Laravel logout endpoint if token exists
+		// Call backend logout endpoint if token exists
 		if (token) {
 			try {
-				await fetch(`${getApiUrl()}/api/logout`, {
+				await fetch(`${getApiUrl()}/fides_api/logout`, {
 					method: 'POST',
 					headers: {
 						Authorization: `Bearer ${token}`,

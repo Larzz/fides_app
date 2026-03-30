@@ -1,8 +1,21 @@
 import { PageLayout } from '@/components/page-layout'
+import { getFidesPageData } from '@/lib/fides-api'
 
-export default function WorkPoliciesPage() {
+export const dynamic = 'force-dynamic'
+
+interface WorkPoliciesPageData {
+	title?: string
+}
+
+export default async function WorkPoliciesPage() {
+	const pageData = await getFidesPageData<WorkPoliciesPageData>(
+		'work-policies',
+		{},
+	)
+	const title = pageData.title || 'Welcome, Sarah 👋'
+
 	return (
-		<PageLayout title="Welcome, Sarah 👋">
+		<PageLayout title={title}>
 			{/* Info Cards */}
 			<div className="grid grid-cols-2 gap-6 mb-6">
 				<div className="bg-white rounded-lg shadow-sm p-6">
