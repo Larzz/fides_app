@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { backendFetch } from '@/lib/api-client'
+import { authPaths } from '@/lib/api-paths'
 
 /**
  * Public routes that don't require authentication
@@ -16,6 +18,8 @@ const publicRoutes = [
 const publicApiRoutes = [
 	'/api/auth/login',
 	'/api/auth/logout',
+	'/api/auth/forgot-password',
+	'/api/auth/reset-password',
 ]
 
 /**
@@ -48,19 +52,14 @@ async function isAuthenticated(request: NextRequest): Promise<boolean> {
 	// For now, we'll do a basic check. In production, make an API call to verify
 	// the token is still valid and not expired
 	try {
-		// Optionally validate token with backend (uncomment for production)
-		// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.creativouae.com'
-		// const response = await fetch(`${API_URL}/api/user`, {
-		// 	method: 'GET',
-		// 	headers: {
-		// 		Authorization: `Bearer ${token}`,
-		// 		Accept: 'application/json',
-		// 	},
-		// 	credentials: 'include',
-		// })
-		// return response.ok
+		if (process.env.MIDDLEWARE_VALIDATE_TOKEN === 'true') {
+			const response = await backendFetch(authPaths.me, {
+				method: 'GET',
+				token,
+			})
+			return response.ok
+		}
 
-		// Basic check: token exists and is not empty
 		return token.length > 0
 	} catch (error) {
 		console.error('Token validation error:', error)

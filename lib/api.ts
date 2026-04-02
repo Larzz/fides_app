@@ -1,13 +1,14 @@
 /**
- * API base URL for the backend.
- * Use API_URL env var to override. Defaults by environment:
- * - development: http://127.0.0.1:8000
- * - production: https://api.creativouae.com
+ * API configuration (re-exports).
+ * Prefer `getServerApiBaseUrl` on the server and `getPublicApiBaseUrl` in
+ * client components.
  */
-export const getApiUrl = (): string => {
-	const envUrl = process.env.API_URL
-	if (envUrl) return envUrl
-	return process.env.NODE_ENV === 'development'
-		? 'http://127.0.0.1:8000'
-		: 'https://api.creativouae.com'
-}
+
+export {
+	getServerApiBaseUrl,
+	getPublicApiBaseUrl,
+	serverApiUrl,
+} from './api-config'
+
+/** @deprecated Use getServerApiBaseUrl */
+export { getServerApiBaseUrl as getApiUrl } from './api-config'

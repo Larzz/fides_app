@@ -20,6 +20,10 @@ function LoginForm() {
 		setIsLoading(true)
 		setError('')
 
+		const loginTimeoutMs = 35_000
+		const abortController = new AbortController()
+		const timeoutId = window.setTimeout(() => abortController.abort(), loginTimeoutMs)
+
 		try {
 			const response = await fetch('/api/auth/login', {
 				method: 'POST',
@@ -28,6 +32,7 @@ function LoginForm() {
 				},
 				credentials: 'include', // Important for cookies
 				body: JSON.stringify({ email, password, rememberMe }),
+				signal: abortController.signal,
 			})
 
 			const data = await response.json()
@@ -53,8 +58,17 @@ function LoginForm() {
 				throw new Error('Login failed. Please try again.')
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'An error occurred')
+			if (err instanceof Error && err.name === 'AbortError') {
+				setError(
+					'Login timed out. Check that the Next.js app can reach Laravel ' +
+						'(use 127.0.0.1 in API_BASE_URL, not localhost).',
+				)
+			} else {
+				setError(err instanceof Error ? err.message : 'An error occurred')
+			}
 			setIsLoading(false)
+		} finally {
+			window.clearTimeout(timeoutId)
 		}
 	}
 

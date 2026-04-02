@@ -1,15 +1,11 @@
 import { PageLayout } from '@/components/page-layout'
-import { getFidesPageData } from '@/lib/fides-api'
+import { loadEmployeesPageData } from '@/lib/employees-service'
 
 export const dynamic = 'force-dynamic'
 
-interface EmployeesPageData {
-	title?: string
-}
-
 export default async function EmployeesPage() {
-	const pageData = await getFidesPageData<EmployeesPageData>('employees', {})
-	const title = pageData.title || 'Welcome, Sarah 👋'
+	const data = await loadEmployeesPageData(10)
+	const title = `Welcome, ${data.userName} 👋`
 
 	return (
 		<PageLayout title={title}>
@@ -17,7 +13,9 @@ export default async function EmployeesPage() {
 			<div className="grid grid-cols-2 gap-6 mb-6">
 				<div className="bg-white rounded-lg shadow-sm p-6">
 					<div className="flex items-baseline gap-2">
-						<span className="text-4xl font-bold text-gray-800">8</span>
+						<span className="text-4xl font-bold text-gray-800">
+							{data.metrics?.active_employees ?? '—'}
+						</span>
 						<div>
 							<div className="text-sm font-semibold text-gray-700">Active Employees</div>
 						</div>
@@ -25,7 +23,9 @@ export default async function EmployeesPage() {
 				</div>
 				<div className="bg-white rounded-lg shadow-sm p-6">
 					<div className="flex items-baseline gap-2">
-						<span className="text-4xl font-bold text-gray-800">1</span>
+						<span className="text-4xl font-bold text-gray-800">
+							{data.metrics?.on_leave_count ?? '—'}
+						</span>
 						<div>
 							<div className="text-sm font-semibold text-gray-700">On Leave</div>
 						</div>
@@ -90,45 +90,52 @@ export default async function EmployeesPage() {
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-200">
-							{[
-								{ name: 'Ahmed R.', role: 'SEO Specialist', client: 'ALPHA CORP', status: 'Active', date: '23 Jan 2026 - 08:55' },
-								{ name: 'Lina M.', role: 'Web Designer', client: 'NOVA LLC', status: 'Active', date: '22 Jan 2026 - 15:10' },
-								{ name: 'Omar K.', role: 'Content Writer', client: 'VERTEX MEDIA', status: 'Active', date: '23 Jan 2026 - 09:14' },
-								{ name: 'Mark T.', role: 'Developer', client: 'NOVA LLC', status: 'Active', date: '20 Jan 2026 - 16:18' },
-								{ name: 'Nina P.', role: 'Marketing Manager', client: 'VERTEX MEDIA', status: 'Active', date: '21 Jan 2026 - 11:30' },
-								{ name: 'Sara L.', role: 'Account Manager', client: 'ALPHA CORP', status: 'On Leave', date: '19 Jan 2026 - 14:20', statusColor: 'yellow' },
-								{ name: 'John D.', role: 'Project Manager', client: 'ATLAS CONSULTING', status: 'Inactive', date: '15 Jan 2026 - 10:45', statusColor: 'red' },
-								{ name: 'Maya S.', role: 'Graphic Designer', client: 'ZENITH FZCO', status: 'Inactive', date: '12 Jan 2026 - 09:15', statusColor: 'red' },
-								{ name: 'Daniel F.', role: 'Developer', client: 'NOVA LLC', status: 'Active', date: '22 Jan 2026 - 13:25' },
-								{ name: 'Alex K.', role: 'SEO Specialist', client: 'ALPHA CORP', status: 'Active', date: '21 Jan 2026 - 16:40' },
-							].map((employee, idx) => (
-								<tr key={idx} className="hover:bg-gray-50">
-									<td className="px-4 py-3 text-sm text-gray-900">{employee.name}</td>
-									<td className="px-4 py-3 text-sm text-gray-500">{employee.role}</td>
-									<td className="px-4 py-3 text-sm text-gray-500">{employee.client}</td>
-									<td className="px-4 py-3 text-sm">
-										<span
-											className={`px-2 py-1 rounded-full text-xs font-medium ${
-												employee.statusColor === 'yellow'
-													? 'bg-yellow-100 text-yellow-800'
-													: employee.statusColor === 'red'
-														? 'bg-red-100 text-red-800'
-														: 'bg-green-100 text-green-800'
-											}`}
-										>
-											{employee.status}
-										</span>
+							{data.employees.items.length === 0 ? (
+								<tr>
+									<td colSpan={5} className="px-4 py-8 text-sm text-center text-gray-500">
+										No employees found.
 									</td>
-									<td className="px-4 py-3 text-sm text-gray-500">{employee.date}</td>
 								</tr>
-							))}
+							) : (
+								data.employees.items.map((employee) => (
+									<tr key={employee.id} className="hover:bg-gray-50">
+										<td className="px-4 py-3 text-sm text-gray-900">{employee.name}</td>
+										<td className="px-4 py-3 text-sm text-gray-500">{employee.roleLabel}</td>
+										<td className="px-4 py-3 text-sm text-gray-500">
+											{employee.assignedClientsLabel}
+										</td>
+										<td className="px-4 py-3 text-sm">
+											<span
+												className={`px-2 py-1 rounded-full text-xs font-medium ${employee.statusBadgeClass}`}
+											>
+												{employee.status}
+											</span>
+										</td>
+										<td className="px-4 py-3 text-sm text-gray-500">
+											{employee.lastActiveLabel}
+										</td>
+									</tr>
+								))
+							)}
 						</tbody>
 					</table>
 				</div>
 
 				{/* Pagination */}
 				<div className="flex justify-between items-center mt-6">
-					<span className="text-sm text-gray-600">Showing 1 to 10 of 23 records</span>
+					{(() => {
+						const ap = data.employees.pagination
+						const from =
+							ap.total === 0 ? 0 : (ap.currentPage - 1) * ap.perPage + 1
+						const to =
+							ap.total === 0 ? 0 : Math.min(ap.currentPage * ap.perPage, ap.total)
+
+						return (
+							<span className="text-sm text-gray-600">
+								Showing {from} to {to} of {ap.total} records
+							</span>
+						)
+					})()}
 					<div className="flex gap-2">
 						<button className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-medium">
 							1

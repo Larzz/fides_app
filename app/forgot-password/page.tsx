@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getApiUrl } from '@/lib/api'
-
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
@@ -18,7 +16,7 @@ export default function ForgotPasswordPage() {
 		setSuccess('')
 
 		try {
-			const response = await fetch(`${getApiUrl()}/fides_api/forgot-password`, {
+			const response = await fetch('/api/auth/forgot-password', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -80,7 +78,8 @@ export default function ForgotPasswordPage() {
 
 					{/* Description */}
 					<p className="text-gray-700 mb-8">
-						Enter your email address and we'll send you a password reset link.
+						Enter your email address and we will send you a password reset
+						link.
 					</p>
 
 					{/* Form */}

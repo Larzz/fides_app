@@ -4,8 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { getApiUrl } from '@/lib/api'
-
 export default function ResetPasswordPage() {
 	const searchParams = useSearchParams()
 	const [newPassword, setNewPassword] = useState('')
@@ -30,7 +28,7 @@ export default function ResetPasswordPage() {
 		try {
 			const token = searchParams.get('token')
 			const email = searchParams.get('email')
-			const response = await fetch(`${getApiUrl()}/fides_api/reset-password`, {
+			const response = await fetch('/api/auth/reset-password', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

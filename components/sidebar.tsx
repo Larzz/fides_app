@@ -47,9 +47,9 @@ export function Sidebar() {
 			{/* Navigation */}
 			<nav className="space-y-2">
 				<Link
-					href="/"
+					href="/dashboard"
 					className={`flex items-center px-4 py-2 rounded-lg text-sm ${
-						isActive('/')
+						pathname === '/' || pathname === '/dashboard'
 							? 'bg-orange-500 text-white'
 							: 'text-gray-700 hover:bg-gray-100'
 					}`}

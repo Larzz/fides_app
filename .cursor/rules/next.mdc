@@ -1,0 +1,112 @@
+---
+alwaysApply: false
+---
+
+# Next.js Cursor Rules
+# Stack: Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui
+
+## Project Structure
+- Use App Router exclusively (`app/` directory). Never use Pages Router.
+- Co-locate components, hooks, and utilities close to where they're used.
+- Global shared code lives in `src/` with this layout:
+  ```
+  src/
+    app/              # Routes, layouts, pages
+    components/       # Shared UI components
+      ui/             # Primitives (buttons, inputs, etc.)
+      features/       # Feature-specific components
+    hooks/            # Custom React hooks
+    lib/              # Utilities, helpers
+    services/         # API call functions (calls Laravel backend)
+    stores/           # Global state (Zustand or similar)
+    types/            # Shared TypeScript types/interfaces
+  ```
+
+## TypeScript
+- Always use TypeScript. No `any` types — use `unknown` and narrow properly.
+- Define all API response shapes in `src/types/`.
+- Use `interface` for object shapes, `type` for unions and aliases.
+- Enable strict mode in `tsconfig.json`.
+
+## Components
+- Default to Server Components (RSC). Only add `"use client"` when you need:
+  - useState / useEffect
+  - Browser APIs
+  - Event handlers
+  - Third-party client-only libraries
+- Keep client components as leaf nodes — push `"use client"` as deep as possible.
+- Use named exports for components, not default exports (except for pages/layouts).
+- One component per file. File name matches component name (PascalCase).
+
+## Data Fetching
+- Fetch data in Server Components using async/await directly.
+- Use `fetch()` with Next.js cache options (`cache: 'no-store'` or `next: { revalidate: N }`).
+- For client-side fetching, use SWR or TanStack Query — never raw `useEffect` + `fetch`.
+- All Laravel API calls go through `src/services/` — never call the API directly from components.
+
+Example service:
+```ts
+// src/services/posts.ts
+export async function getPosts(): Promise<Post[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts`, {
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to fetch posts');
+  return res.json();
+}
+```
+
+## Authentication
+- Use HTTP-only cookies for session tokens (set by Laravel Sanctum).
+- Never store tokens in localStorage or JS-accessible cookies.
+- Gate protected routes via middleware (`middleware.ts`).
+- Use `next-auth` or a custom auth context — document the choice clearly.
+
+## Environment Variables
+- Prefix client-exposed vars with `NEXT_PUBLIC_`.
+- Server-only secrets (API keys, etc.) must NOT have `NEXT_PUBLIC_` prefix.
+- Document all env vars in `.env.example`.
+
+## Forms & Validation
+- Use React Hook Form for all forms.
+- Validate with Zod. Share Zod schemas with TypeScript types via `z.infer<>`.
+- Always handle loading, error, and success states.
+
+## Error Handling
+- Use `error.tsx` for route-level error boundaries.
+- Use `not-found.tsx` for 404 states.
+- Surface user-facing errors with toast notifications (e.g., `sonner`).
+- Log errors server-side; never expose raw error messages to the client.
+
+## Styling
+- Use Tailwind CSS. No inline styles, no CSS modules unless unavoidable.
+- Use `cn()` (from `clsx` + `tailwind-merge`) for conditional class merging.
+- Never use `!important`.
+- Mobile-first breakpoints.
+
+## Performance
+- Use `next/image` for all images — never raw `<img>` tags.
+- Use `next/font` for font loading.
+- Lazy-load heavy client components with `dynamic(() => import(...), { ssr: false })`.
+- Add `loading.tsx` files for meaningful suspense boundaries.
+
+## API Communication with Laravel
+- Base URL from `process.env.NEXT_PUBLIC_API_URL` (e.g., `http://localhost:8000`).
+- Always send `Accept: application/json` and `Content-Type: application/json`.
+- For Sanctum cookie auth, include `credentials: 'include'` in fetch options.
+- Handle 401 → redirect to login; 422 → map validation errors to form fields.
+
+## Naming Conventions
+- Files/folders: `kebab-case` (e.g., `user-profile/`)
+- Components: `PascalCase` (e.g., `UserProfile.tsx`)
+- Hooks: `camelCase` prefixed with `use` (e.g., `useUserProfile.ts`)
+- Constants: `UPPER_SNAKE_CASE`
+- Types/Interfaces: `PascalCase`
+
+## Don'ts
+- Don't fetch data inside useEffect for initial page data — use RSC or SWR.
+- Don't import server-only code into client components.
+- Don't hardcode API URLs — always use env vars.
+- Don't skip loading and error states.
+- Don't use `export default` for non-page components.

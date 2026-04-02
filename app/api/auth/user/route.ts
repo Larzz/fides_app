@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getApiUrl } from '@/lib/api'
+import { backendFetch, readJsonSafe, type ApiEnvelope } from '@/lib/api-client'
+import { authPaths } from '@/lib/api-paths'
 
 /**
- * User Validation API Route
- * Validates the current user's token and returns user data
+ * Validates the session against Laravel (`GET /api/me`).
  */
 export const dynamic = 'force-dynamic'
 
@@ -14,44 +14,43 @@ export async function GET(request: NextRequest) {
 		if (!token) {
 			return NextResponse.json(
 				{ message: 'No authentication token found' },
-				{ status: 401 }
+				{ status: 401 },
 			)
 		}
 
-		// Validate token with backend
-		const response = await fetch(`${getApiUrl()}/fides_api/user`, {
+		const response = await backendFetch(authPaths.me, {
 			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${token}`,
-				Accept: 'application/json',
-			},
+			token,
 			credentials: 'include',
 		})
 
 		if (!response.ok) {
-			// Token is invalid or expired
 			const errorResponse = NextResponse.json(
 				{ message: 'Invalid or expired token' },
-				{ status: 401 }
+				{ status: 401 },
 			)
-
-			// Clear invalid token
 			errorResponse.cookies.delete('auth_token')
 			return errorResponse
 		}
 
-		const userData = await response.json()
+		const raw = await readJsonSafe(response)
+		const user =
+			raw &&
+			typeof raw === 'object' &&
+			'data' in raw &&
+			(raw as ApiEnvelope<unknown>).data !== undefined
+				? (raw as ApiEnvelope<unknown>).data
+				: raw
 
 		return NextResponse.json({
 			success: true,
-			user: userData,
+			user,
 		})
 	} catch (error) {
 		console.error('User validation error:', error)
 		return NextResponse.json(
 			{ message: 'An error occurred during user validation' },
-			{ status: 500 }
+			{ status: 500 },
 		)
 	}
 }
-

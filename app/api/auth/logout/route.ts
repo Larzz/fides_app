@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getApiUrl } from '@/lib/api'
+import { backendFetch } from '@/lib/api-client'
+import { authPaths } from '@/lib/api-paths'
 
 /**
- * Logout API Route
- * Handles user logout and clears authentication cookies
+ * Proxies logout to Laravel (`POST /api/logout`) and clears app cookies.
  */
 export const dynamic = 'force-dynamic'
 
@@ -11,30 +11,23 @@ export async function POST(request: NextRequest) {
 	try {
 		const token = request.cookies.get('auth_token')?.value
 
-		// Call backend logout endpoint if token exists
 		if (token) {
 			try {
-				await fetch(`${getApiUrl()}/fides_api/logout`, {
+				await backendFetch(authPaths.logout, {
 					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${token}`,
-						Accept: 'application/json',
-					},
+					token,
 					credentials: 'include',
 				})
 			} catch (error) {
-				// Continue with logout even if backend call fails
 				console.error('Logout API error:', error)
 			}
 		}
 
-		// Create response
 		const response = NextResponse.json({
 			success: true,
 			message: 'Logged out successfully',
 		})
 
-		// Clear all authentication cookies
 		response.cookies.delete('auth_token')
 		response.cookies.delete('sanctum_token')
 		response.cookies.delete('laravel_session')
@@ -44,8 +37,7 @@ export async function POST(request: NextRequest) {
 		console.error('Logout error:', error)
 		return NextResponse.json(
 			{ message: 'An error occurred during logout' },
-			{ status: 500 }
+			{ status: 500 },
 		)
 	}
 }
-
